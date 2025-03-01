@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Adhyayn - Find Your Learner Type</title>
+    <style>
+        /* General Styling */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        body {
+            background-color: #0B1E46;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            padding: 50px;
+            border-radius: 20px;
+            box-shadow: 0px 8px 20px rgba(0, 0, 0, 0.2);
+            max-width: 600px;
+            width: 100%;
+            text-align: center;
+        }
+
+        h1 {
+            font-size: 32px;
+            font-weight: 700;
+            color: #1E3A8A;
+            margin-bottom: 10px;
+        }
+
+        p {
+            font-size: 18px;
+            color: #555;
+            margin-bottom: 20px;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .slider-container {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .slider {
+            flex: 1;
+            -webkit-appearance: none;
+            appearance: none;
+            height: 10px;
+            background: #E5E5E5;
+            border-radius: 5px;
+            outline: none;
+            transition: background 0.3s;
+        }
+
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 24px;
+            height: 24px;
+            background: #1E3A8A;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+
+        .slider-value {
+            font-size: 18px;
+            font-weight: bold;
+            color: #1E3A8A;
+            width: 30px;
+            text-align: center;
+        }
+
+        select, button {
+            width: 100%;
+            padding: 15px;
+            font-size: 18px;
+            border-radius: 8px;
+            border: none;
+            margin-top: 10px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        select {
+            background: #F8F9FA;
+        }
+
+        button {
+            background: #1E3A8A;
+            color: white;
+            transition: all 0.3s ease-in-out;
+        }
+
+        button:hover {
+            background: #142957;
+            transform: translateY(-2px);
+            box-shadow: 0px 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        #result {
+            margin-top: 30px;
+            font-size: 22px;
+            font-weight: bold;
+            color: #1E3A8A;
+        }
+    </style>
+</head>
+<body>
+
+    <main class="container">
+        <!-- Introduction Section -->
+        <section id="intro">
+            <h1>Find Your Learner Type</h1>
+            <p>Discover your optimal learning style (Visual, Auditory, or Kinesthetic). Answer a few quick questions to get started!</p>
+            <button onclick="startTest()">Start Now</button>
+        </section>
+
+        <!-- Gender Selection -->
+        <section id="gender-section" class="hidden">
+            <h1>Select Gender</h1>
+            <select id="gender">
+                <option value="0">Male</option>
+                <option value="1">Female</option>
+            </select>
+            <button onclick="nextQuestion()">Next</button>
+        </section>
+
+        <!-- Question Section -->
+        <section id="question-section" class="hidden">
+            <h1>Question <span id="question-number">1</span>/14</h1>
+            <p id="question-text" class="question"></p>
+            <div class="slider-container">
+                <input type="range" id="question-slider" class="slider" min="1" max="5" value="3" oninput="updateValue(this.value)">
+                <span class="slider-value" id="slider-value">3</span>
+            </div>
+            <button onclick="nextQuestion()">Next</button>
+        </section>
+
+        <p id="result"></p>
+    </main>
+
+    <script>
+        let currentQuestion = 0;
+        let responses = {};
+        const questions = [
+            "I learn better by reading what the teacher writes on the chalkboard.",
+            "When I read instructions, I remember them better.",
+            "I understand better when I read instructions.",
+            "I learn better by reading than by listening to someone.",
+            "I learn more by reading textbooks than by listening to lectures.",
+            "When the teacher tells me the instructions, I understand better.",
+            "When someone tells me how to do something in class, I learn it better.",
+            "I remember things I have heard in class better than things I have read.",
+            "I learn better in class when the teacher gives a lecture.",
+            "I learn better in class when I listen to someone.",
+            "I prefer to learn by doing something in class.",
+            "When I do things in class, I learn better.",
+            "I enjoy learning in class by doing experiments.",
+            "I understand things better in class when I participate in role-playing."
+        ];
+
+        function startTest() {
+            document.getElementById("intro").classList.add("hidden");
+            document.getElementById("gender-section").classList.remove("hidden");
+        }
+
+        function nextQuestion() {
+            if (currentQuestion === 0) {
+                responses["gender"] = parseInt(document.getElementById("gender").value);
+                document.getElementById("gender-section").classList.add("hidden");
+                document.getElementById("question-section").classList.remove("hidden");
+            } else {
+                let value = parseInt(document.getElementById("question-slider").value);
+                responses[`q${currentQuestion}`] = value;
+            }
+
+            if (currentQuestion < questions.length) {
+                document.getElementById("question-number").innerText = currentQuestion + 1;
+                document.getElementById("question-text").innerText = questions[currentQuestion];
+                currentQuestion++;
+            } else {
+                sendData();
+            }
+        }
+
+        function updateValue(value) {
+            document.getElementById("slider-value").innerText = value;
+        }
+
+        function sendData() {
+            fetch("/predict", {
+                method: "POST",
+                body: JSON.stringify(responses),
+                headers: { "Content-Type": "application/json" }
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById("question-section").classList.add("hidden");
+                document.getElementById("result").innerText = "Learner Type: " + (data.learner_type || "Error occurred");
+            })
+            .catch(error => {
+                document.getElementById("result").innerText = "Error: " + error;
+            });
+        }
+    </script>
+
+</body>
+</html>
